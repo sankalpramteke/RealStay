@@ -36,23 +36,39 @@ export default function Home() {
   ];
 
   const popularDestinations = [
-    { name: "Paris", image: "🗼", hotels: "500+ hotels" },
-    { name: "Tokyo", image: "🌸", hotels: "400+ hotels" },
-    { name: "New York", image: "🏙️", hotels: "600+ hotels" },
-    { name: "London", image: "🏰", hotels: "450+ hotels" }
+    { name: "Delhi", image: "🕌", hotels: "800+ hotels" },
+    { name: "Mumbai", image: "🌴", hotels: "900+ hotels" },
+    { name: "Bangalore", image: "🌳", hotels: "700+ hotels" },
+    { name: "Kolkata", image: "🌉", hotels: "600+ hotels" },
+    { name: "Pune", image: "🏞️", hotels: "500+ hotels" },
+    { name: "Hyderabad", image: "🏰", hotels: "650+ hotels" },
+    { name: "Chennai", image: "🏖️", hotels: "550+ hotels" },
+    { name: "Jaipur", image: "🎡", hotels: "400+ hotels" },
+    { name: "Goa", image: "🏝️", hotels: "1000+ hotels" },
+    { name: "Agra", image: "🕌", hotels: "350+ hotels" },
+    { name: "Nagpur", image: "🌲", hotels: "300+ hotels" },
+    { name: "Kochi", image: "🚢", hotels: "450+ hotels" },
   ];
 
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary to-accent py-20 px-4">
+      <section className="relative py-20 px-4" style={{
+        backgroundImage: `url('/src/components/layout/background.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}>
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="relative z-10">
         <div className="container mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Find Your Perfect Stay
+            Where Trust Meets Travel
           </h1>
           <p className="text-xl text-white/90 mb-12 max-w-2xl mx-auto">
             Discover authentic hotels with verified reviews from real guests. 
-            Book with confidence on TourProof.
+            Book with confidence on RealStay.
           </p>
           
           {/* Search Form */}
@@ -93,12 +109,13 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+        </div>
       </section>
 
       {/* Features Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Why Choose TourProof?</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose RealStay?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="text-center p-6">

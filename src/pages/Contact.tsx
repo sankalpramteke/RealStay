@@ -44,7 +44,7 @@ export default function Contact() {
     {
       icon: Mail,
       title: "Email Us",
-      details: "support@tourproof.com",
+      details: "support@realstay.com",
       description: "We typically respond within 2-4 hours"
     },
     {
