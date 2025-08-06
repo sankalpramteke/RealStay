@@ -8,10 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Star, Wifi, Car, Coffee, Users, Calendar } from 'lucide-react';
+import { PaymentModal } from '@/components/PaymentModal';
+import { 
+  MapPin, Star, Wifi, Car, Coffee, Users, Calendar, Shield, 
+  Accessibility, ChefHat, Tv, TreePine, Baby, Camera, Heart,
+  Share, Grid3X3, Phone, CheckCircle
+} from 'lucide-react';
 
 interface Hotel {
   id: string;
@@ -24,6 +30,12 @@ interface Hotel {
   rating: number;
   image_url: string;
   amenities: string[];
+  safety_amenities: string[];
+  accessibility_amenities: string[];
+  kitchen_amenities: string[];
+  entertainment_amenities: string[];
+  outdoor_amenities: string[];
+  family_amenities: string[];
 }
 
 interface Room {
@@ -59,12 +71,33 @@ export default function HotelDetail() {
   const [guests, setGuests] = useState('1');
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [showAllPhotos, setShowAllPhotos] = useState(false);
+  const [hasBooked, setHasBooked] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchHotelData();
+      checkUserBooking();
     }
-  }, [id]);
+  }, [id, user]);
+
+  const checkUserBooking = async () => {
+    if (!user || !id) return;
+    
+    try {
+      const { data } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('hotel_id', id)
+        .eq('status', 'confirmed')
+        .limit(1);
+      
+      setHasBooked(data && data.length > 0);
+    } catch (error) {
+      console.error('Error checking booking:', error);
+    }
+  };
 
   const fetchHotelData = async () => {
     try {
@@ -109,20 +142,8 @@ export default function HotelDetail() {
     }
   };
 
-  const handleBooking = async () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    if (!selectedRoom || !checkInDate || !checkOutDate) {
-      toast({
-        title: "Missing information",
-        description: "Please select a room and dates",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handlePaymentSuccess = async (paymentMethod: string, transactionId?: string) => {
+    if (!user || !selectedRoom || !checkInDate || !checkOutDate) return;
 
     const selectedRoomData = rooms.find(r => r.id === selectedRoom);
     if (!selectedRoomData) return;
@@ -143,16 +164,15 @@ export default function HotelDetail() {
           check_in_date: checkInDate,
           check_out_date: checkOutDate,
           guests: parseInt(guests),
-          total_amount: totalAmount
+          total_amount: totalAmount,
+          payment_method: paymentMethod,
+          payment_transaction_id: transactionId,
+          payment_amount: paymentMethod === 'pending' ? null : totalAmount
         });
 
       if (error) throw error;
 
-      toast({
-        title: "Booking confirmed!",
-        description: "Your reservation has been successfully created."
-      });
-
+      setHasBooked(true);
       navigate('/my-bookings');
 
     } catch (error) {
@@ -214,17 +234,110 @@ export default function HotelDetail() {
     }
   };
 
-  const getAmenityIcon = (amenity: string) => {
+  const getAmenityIcon = (amenity: string, category?: string) => {
+    const iconClass = "h-4 w-4";
     switch (amenity.toLowerCase()) {
       case 'wifi':
-        return <Wifi className="h-4 w-4" />;
+      case 'high-speed wifi':
+        return <Wifi className={iconClass} />;
       case 'parking':
-        return <Car className="h-4 w-4" />;
+        return <Car className={iconClass} />;
       case 'breakfast':
-        return <Coffee className="h-4 w-4" />;
+      case 'tea/coffee maker':
+        return <Coffee className={iconClass} />;
+      case 'cctv surveillance':
+      case '24/7 security':
+      case 'safe deposit box':
+      case 'fire extinguisher':
+        return <Shield className={iconClass} />;
+      case 'wheelchair accessible':
+      case 'elevator access':
+      case 'accessible bathroom':
+        return <Accessibility className={iconClass} />;
+      case 'mini fridge':
+      case 'microwave':
+        return <ChefHat className={iconClass} />;
+      case 'smart tv':
+      case 'netflix access':
+      case 'music system':
+        return <Tv className={iconClass} />;
+      case 'balcony':
+      case 'garden view':
+      case 'swimming pool':
+      case 'terrace access':
+        return <TreePine className={iconClass} />;
+      case 'kids play area':
+      case 'baby cot available':
+      case 'family rooms':
+        return <Baby className={iconClass} />;
       default:
-        return null;
+        return <CheckCircle className={iconClass} />;
     }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'safety': return <Shield className="h-5 w-5" />;
+      case 'accessibility': return <Accessibility className="h-5 w-5" />;
+      case 'kitchen': return <ChefHat className="h-5 w-5" />;
+      case 'entertainment': return <Tv className="h-5 w-5" />;
+      case 'outdoor': return <TreePine className="h-5 w-5" />;
+      case 'family': return <Baby className="h-5 w-5" />;
+      default: return <CheckCircle className="h-5 w-5" />;
+    }
+  };
+
+  const renderAmenityCategory = (title: string, amenities: string[], category: string) => {
+    if (!amenities || amenities.length === 0) return null;
+    
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2">
+          {getCategoryIcon(category)}
+          <h4 className="font-semibold text-base">{title}</h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {amenities.map((amenity, index) => (
+            <div key={index} className="flex items-center space-x-2 text-sm">
+              {getAmenityIcon(amenity, category)}
+              <span>{amenity}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const getBookingButtonProps = () => {
+    if (!user) {
+      return {
+        onClick: () => navigate('/auth'),
+        children: 'Sign in to Book'
+      };
+    }
+    
+    if (!selectedRoom || !checkInDate || !checkOutDate) {
+      return {
+        disabled: true,
+        children: 'Select Room & Dates'
+      };
+    }
+
+    const selectedRoomData = rooms.find(r => r.id === selectedRoom);
+    const nights = checkInDate && checkOutDate ? 
+      Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 3600 * 24)) : 0;
+    const totalAmount = selectedRoomData ? selectedRoomData.price_per_night * nights : 0;
+
+    return {
+      children: `Book Now - ₹${totalAmount.toLocaleString()}`,
+      paymentProps: {
+        totalAmount,
+        nights,
+        hotelName: hotel?.name || '',
+        roomType: selectedRoomData?.room_type || '',
+        onPaymentSuccess: handlePaymentSuccess
+      }
+    };
   };
 
   if (loading) {
@@ -253,73 +366,249 @@ export default function HotelDetail() {
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="container mx-auto">
-        {/* Hotel Header */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div>
-            <div className="h-96 bg-muted rounded-lg flex items-center justify-center mb-4">
+        {/* Hotel Header with Photo Gallery */}
+        <div className="space-y-6 mb-8">
+          {/* Title and Location */}
+          <div className="space-y-2">
+            <h1 className="text-2xl md:text-3xl font-bold">{hotel.name}</h1>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center text-muted-foreground">
+                <MapPin className="h-4 w-4 mr-1" />
+                <span>{hotel.location}, {hotel.city}, {hotel.country}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="sm">
+                  <Share className="h-4 w-4 mr-1" />
+                  Share
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <Heart className="h-4 w-4 mr-1" />
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Photo Gallery */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-80 md:h-96">
+            <div className="md:col-span-2 md:row-span-2">
               {hotel.image_url ? (
                 <img 
                   src={hotel.image_url} 
                   alt={hotel.name}
-                  className="w-full h-full object-cover rounded-lg"
+                  className="w-full h-full object-cover rounded-l-lg cursor-pointer hover:brightness-90 transition-all"
+                  onClick={() => setShowAllPhotos(true)}
                 />
               ) : (
-                <div className="text-8xl">🏨</div>
+                <div className="w-full h-full bg-muted rounded-l-lg flex items-center justify-center text-8xl cursor-pointer hover:bg-muted/80 transition-colors">
+                  🏨
+                </div>
               )}
             </div>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{hotel.name}</h1>
-              <div className="flex items-center text-muted-foreground mb-2">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span>{hotel.location}, {hotel.city}, {hotel.country}</span>
-              </div>
-              <div className="flex items-center mb-4">
-                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400 mr-1" />
-                <span className="font-semibold">{hotel.rating}</span>
-                <span className="text-muted-foreground ml-2">({reviews.length} reviews)</span>
+            <div className="hidden md:block">
+              <div className="w-full h-full bg-muted/50 rounded-tr-lg flex items-center justify-center text-4xl">
+                🛏️
               </div>
             </div>
-
-            <p className="text-muted-foreground">{hotel.description}</p>
-
-            {hotel.amenities && hotel.amenities.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2">Amenities</h3>
-                <div className="flex flex-wrap gap-2">
-                  {hotel.amenities.map((amenity, index) => (
-                    <Badge key={index} variant="secondary">
-                      {getAmenityIcon(amenity)}
-                      <span className="ml-1">{amenity}</span>
-                    </Badge>
-                  ))}
-                </div>
+            <div className="hidden md:block">
+              <div className="w-full h-full bg-muted/30 flex items-center justify-center text-4xl">
+                🏊‍♂️
               </div>
-            )}
-
-            <div className="text-2xl font-bold">
-              From ${hotel.price_per_night}/night
+            </div>
+            <div className="hidden md:block">
+              <div className="w-full h-full bg-muted/50 flex items-center justify-center text-4xl">
+                🍳
+              </div>
+            </div>
+            <div className="hidden md:block relative">
+              <div className="w-full h-full bg-muted/30 rounded-br-lg flex items-center justify-center text-4xl">
+                <Button 
+                  variant="outline" 
+                  className="absolute bottom-2 right-2"
+                  onClick={() => setShowAllPhotos(true)}
+                >
+                  <Grid3X3 className="h-4 w-4 mr-1" />
+                  Show all photos
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="rooms" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="rooms">Rooms & Booking</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews</TabsTrigger>
-            <TabsTrigger value="write-review">Write Review</TabsTrigger>
-          </TabsList>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Host and Property Info */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Entire hotel in {hotel.city}</h2>
+                  <p className="text-muted-foreground">{rooms.length} room types available</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold">{hotel.rating}</span>
+                  <span className="text-muted-foreground">({reviews.length} reviews)</span>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <p className="text-muted-foreground leading-relaxed">{hotel.description}</p>
+            </div>
 
-          <TabsContent value="rooms" className="space-y-6">
-            <Card>
+            {/* What this place offers */}
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold">What this place offers</h3>
+              <div className="space-y-6">
+                {renderAmenityCategory("Safety & Security", hotel.safety_amenities, "safety")}
+                {renderAmenityCategory("Accessibility", hotel.accessibility_amenities, "accessibility")}
+                {renderAmenityCategory("Kitchen & Dining", hotel.kitchen_amenities, "kitchen")}
+                {renderAmenityCategory("Entertainment", hotel.entertainment_amenities, "entertainment")}
+                {renderAmenityCategory("Outdoor", hotel.outdoor_amenities, "outdoor")}
+                {renderAmenityCategory("Family", hotel.family_amenities, "family")}
+                
+                {/* General Amenities */}
+                {hotel.amenities && hotel.amenities.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-base">General</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {hotel.amenities.map((amenity, index) => (
+                        <div key={index} className="flex items-center space-x-2 text-sm">
+                          {getAmenityIcon(amenity)}
+                          <span>{amenity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tabs for Reviews */}
+            <Tabs defaultValue="reviews" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
+                <TabsTrigger value="write-review" disabled={!hasBooked}>
+                  {hasBooked ? 'Write Review' : 'Book to Review'}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="reviews" className="space-y-6">
+                {reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <Card key={review.id}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-center mb-2">
+                            <div className="flex items-center">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-4 w-4 ${
+                                    i < review.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="ml-2 text-sm text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground">{review.comment}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">💭</div>
+                    <h3 className="text-xl font-semibold mb-2">No reviews yet</h3>
+                    <p className="text-muted-foreground">Be the first to share your experience!</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="write-review" className="space-y-6">
+                {hasBooked ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Write a Review</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label>Rating</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-6 w-6 cursor-pointer transition-colors ${
+                                star <= newReview.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300 hover:text-yellow-200'
+                              }`}
+                              onClick={() => setNewReview({ ...newReview, rating: star })}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="comment">Your Review</Label>
+                        <Textarea
+                          id="comment"
+                          placeholder="Share your experience..."
+                          value={newReview.comment}
+                          onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                          rows={4}
+                        />
+                      </div>
+
+                      <Button 
+                        onClick={handleSubmitReview}
+                        disabled={submittingReview}
+                        className="w-full"
+                      >
+                        {submittingReview ? 'Submitting...' : 'Submit Review'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <h3 className="text-lg font-semibold mb-2">Book to Review</h3>
+                      <p className="text-muted-foreground mb-4">
+                        You must book and stay at this hotel to write a review
+                      </p>
+                      <Button variant="outline">View Available Rooms</Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Right Sidebar - Booking Widget */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-6">
               <CardHeader>
-                <CardTitle>Book Your Stay</CardTitle>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="text-2xl font-bold">₹{hotel.price_per_night.toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground">per night</div>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-semibold">{hotel.rating}</span>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Date Selection */}
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label htmlFor="checkin">Check-in</Label>
                     <Input
@@ -338,153 +627,87 @@ export default function HotelDetail() {
                       onChange={(e) => setCheckOutDate(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="guests">Guests</Label>
-                    <Select value={guests} onValueChange={setGuests}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[1, 2, 3, 4, 5, 6].map(num => (
-                          <SelectItem key={num} value={num.toString()}>{num} Guest{num > 1 ? 's' : ''}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleBooking} className="w-full">
-                      Book Now
-                    </Button>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {rooms.map((room) => (
-                <Card 
-                  key={room.id} 
-                  className={`cursor-pointer transition-colors ${
-                    selectedRoom === room.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => setSelectedRoom(room.id)}
-                >
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold text-lg mb-2">{room.room_type}</h3>
-                    
-                    <div className="flex items-center text-muted-foreground mb-2">
-                      <Users className="h-4 w-4 mr-1" />
-                      <span>Up to {room.capacity} guests</span>
-                    </div>
-
-                    {room.amenities && room.amenities.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {room.amenities.map((amenity, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {getAmenityIcon(amenity)}
-                            <span className="ml-1">{amenity}</span>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-2xl font-bold">${room.price_per_night}</span>
-                        <span className="text-muted-foreground">/night</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {room.available_rooms} rooms available
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="reviews" className="space-y-6">
-            {reviews.length > 0 ? (
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <Card key={review.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center mb-2">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-4 w-4 ${
-                                i < review.rating
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="ml-2 text-sm text-muted-foreground">
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">💭</div>
-                <h3 className="text-xl font-semibold mb-2">No reviews yet</h3>
-                <p className="text-muted-foreground">Be the first to share your experience!</p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="write-review" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Write a Review</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                {/* Guests Selection */}
                 <div>
-                  <Label>Rating</Label>
-                  <div className="flex items-center space-x-1 mt-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-6 w-6 cursor-pointer transition-colors ${
-                          star <= newReview.rating
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300 hover:text-yellow-200'
+                  <Label htmlFor="guests">Guests</Label>
+                  <Select value={guests} onValueChange={setGuests}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6].map(num => (
+                        <SelectItem key={num} value={num.toString()}>
+                          {num} Guest{num > 1 ? 's' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Room Selection */}
+                <div>
+                  <Label>Select Room Type</Label>
+                  <div className="space-y-2 mt-2">
+                    {rooms.map((room) => (
+                      <Card 
+                        key={room.id}
+                        className={`cursor-pointer transition-colors p-3 ${
+                          selectedRoom === room.id ? 'ring-2 ring-primary bg-primary/5' : ''
                         }`}
-                        onClick={() => setNewReview({ ...newReview, rating: star })}
-                      />
+                        onClick={() => setSelectedRoom(room.id)}
+                      >
+                        <div className="space-y-1">
+                          <div className="font-medium">{room.room_type}</div>
+                          <div className="text-sm text-muted-foreground flex items-center">
+                            <Users className="h-3 w-3 mr-1" />
+                            Up to {room.capacity} guests
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold">₹{room.price_per_night}/night</span>
+                            <span className="text-xs text-muted-foreground">
+                              {room.available_rooms} available
+                            </span>
+                          </div>
+                        </div>
+                      </Card>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="comment">Your Review</Label>
-                  <Textarea
-                    id="comment"
-                    placeholder="Share your experience..."
-                    value={newReview.comment}
-                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                    rows={4}
-                  />
-                </div>
+                {/* Booking Button */}
+                {(() => {
+                  const buttonProps = getBookingButtonProps();
+                  return buttonProps.paymentProps ? (
+                    <PaymentModal {...buttonProps.paymentProps}>
+                      <Button className="w-full" size="lg">
+                        {buttonProps.children}
+                      </Button>
+                    </PaymentModal>
+                  ) : (
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      disabled={buttonProps.disabled}
+                      onClick={buttonProps.onClick}
+                    >
+                      {buttonProps.children}
+                    </Button>
+                  );
+                })()}
 
-                <Button 
-                  onClick={handleSubmitReview}
-                  disabled={submittingReview}
-                  className="w-full"
-                >
-                  {submittingReview ? 'Submitting...' : 'Submit Review'}
-                </Button>
+                <div className="text-center text-sm text-muted-foreground">
+                  <div className="flex items-center justify-center space-x-1">
+                    <Phone className="h-3 w-3" />
+                    <span>You won't be charged yet</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
+
       </div>
     </div>
   );
