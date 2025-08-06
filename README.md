@@ -1,3 +1,63 @@
+# RealStay
+
+RealStay is a modern hotel booking platform focused on trust and transparency. It features only verified reviews from real guests, instant booking, and a curated selection of quality hotels.
+
+## Project Overview
+
+RealStay helps travelers make confident booking decisions by ensuring all hotel reviews are authentic and submitted by guests who have actually stayed at the property. The platform offers:
+
+- **Verified Reviews:** Only guests with completed bookings can leave reviews.
+- **Quality Assurance:** Handpicked hotels with genuine ratings.
+- **Instant Booking:** Fast and secure reservation process.
+- **Modern UI:** Built with React, shadcn-ui, and Tailwind CSS for a seamless user experience.
+- **Crypto & UPI Payments:** Simulated MetaMask and UPI payment flows.
+- **Profile Management:** Users can manage their profiles and bookings.
+- **Admin Features:** (If enabled) Add and manage hotels and rooms.
+
+## Main Features
+
+- Browse and search hotels by city or name.
+- View detailed hotel information, rooms, and verified guest reviews.
+- Book rooms with instant confirmation.
+- Leave reviews only after a completed stay.
+- Manage your bookings and profile.
+- Contact support via the contact page.
+
+## Tech Stack
+
+- **Frontend:** React, TypeScript, Vite
+- **UI:** shadcn-ui, Tailwind CSS
+- **Backend:** Supabase (Postgres, Auth, Storage)
+- **State/Data:** React Query
+- **Other:** MetaMask integration (simulated), UPI (simulated)
+
+## Getting Started
+
+Clone the repository and install dependencies:
+
+```sh
+git clone <YOUR_GIT_URL>
+cd <YOUR_PROJECT_NAME>
+npm install
+npm run dev
+```
+
+## Deployment
+
+You can deploy using [Lovable](https://lovable.dev/projects/24e753c1-4653-4351-8ad6-b051aaa80b23) or your preferred platform. For custom domains, see Project > Settings > Domains in Lovable.
+
+## Customization
+
+- Update hotel data and policies in the Supabase dashboard.
+- Modify UI components in `src/components/ui/`.
+- Adjust styles in `src/index.css`.
+
+## License
+
+This project is for demonstration and educational purposes.
+
+---
+
 # Welcome to your Lovable project
 
 ## Project info
