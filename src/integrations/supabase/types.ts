@@ -22,6 +22,9 @@ export type Database = {
           guests: number
           hotel_id: string
           id: string
+          payment_amount: number | null
+          payment_method: string | null
+          payment_transaction_id: string | null
           room_id: string
           status: string
           total_amount: number
@@ -35,6 +38,9 @@ export type Database = {
           guests: number
           hotel_id: string
           id?: string
+          payment_amount?: number | null
+          payment_method?: string | null
+          payment_transaction_id?: string | null
           room_id: string
           status?: string
           total_amount: number
@@ -48,6 +54,9 @@ export type Database = {
           guests?: number
           hotel_id?: string
           id?: string
+          payment_amount?: number | null
+          payment_method?: string | null
+          payment_transaction_id?: string | null
           room_id?: string
           status?: string
           total_amount?: number
@@ -80,45 +89,63 @@ export type Database = {
       }
       hotels: {
         Row: {
+          accessibility_amenities: string[] | null
           amenities: string[] | null
           city: string
           country: string
           created_at: string
           description: string | null
+          entertainment_amenities: string[] | null
+          family_amenities: string[] | null
           id: string
           image_url: string | null
+          kitchen_amenities: string[] | null
           location: string
           name: string
+          outdoor_amenities: string[] | null
           price_per_night: number
           rating: number | null
+          safety_amenities: string[] | null
           updated_at: string
         }
         Insert: {
+          accessibility_amenities?: string[] | null
           amenities?: string[] | null
           city: string
           country: string
           created_at?: string
           description?: string | null
+          entertainment_amenities?: string[] | null
+          family_amenities?: string[] | null
           id?: string
           image_url?: string | null
+          kitchen_amenities?: string[] | null
           location: string
           name: string
+          outdoor_amenities?: string[] | null
           price_per_night: number
           rating?: number | null
+          safety_amenities?: string[] | null
           updated_at?: string
         }
         Update: {
+          accessibility_amenities?: string[] | null
           amenities?: string[] | null
           city?: string
           country?: string
           created_at?: string
           description?: string | null
+          entertainment_amenities?: string[] | null
+          family_amenities?: string[] | null
           id?: string
           image_url?: string | null
+          kitchen_amenities?: string[] | null
           location?: string
           name?: string
+          outdoor_amenities?: string[] | null
           price_per_night?: number
           rating?: number | null
+          safety_amenities?: string[] | null
           updated_at?: string
         }
         Relationships: []
@@ -241,7 +268,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_user_booked_hotel: {
+        Args: { user_id_param: string; hotel_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
