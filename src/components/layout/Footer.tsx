@@ -10,7 +10,7 @@ export function Footer() {
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">T</span>
               </div>
-              <span className="font-bold text-xl text-primary">TourProof</span>
+              <span className="font-bold text-xl text-primary">RealStay</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Your trusted platform for authentic hotel bookings with verified reviews.
@@ -67,7 +67,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; 2024 TourProof. All rights reserved.</p>
+          <p>&copy; 2024 RealStay. All rights reserved.</p>
         </div>
       </div>
     </footer>

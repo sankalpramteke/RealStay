@@ -22,7 +22,7 @@ export function Header() {
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-lg">T</span>
           </div>
-          <span className="font-bold text-xl text-primary">TourProof</span>
+          <span className="font-bold text-xl text-primary">RealStay</span>
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6">

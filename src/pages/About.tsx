@@ -45,10 +45,20 @@ export default function About() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary to-accent py-20 px-4 text-white">
-        <div className="container mx-auto text-center">
+      <section
+        className="relative py-20 px-4 text-white"
+        style={{
+          backgroundImage: `url('/src/components/layout/background.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="container mx-auto text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            About TourProof
+            About RealStay
           </h1>
           <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
             We're revolutionizing travel by ensuring every hotel review comes from verified guests, 
@@ -64,7 +74,7 @@ export default function About() {
             <div>
               <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
               <p className="text-lg text-muted-foreground mb-6">
-                At TourProof, we believe that travel decisions should be based on authentic experiences 
+                At RealStay, we believe that travel decisions should be based on authentic experiences 
                 from real travelers. Our mission is to eliminate fake reviews and provide a platform 
                 where every piece of feedback comes from verified hotel guests.
               </p>
@@ -105,7 +115,7 @@ export default function About() {
       {/* Features Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Why Choose TourProof?</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose RealStay?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="text-center p-6">
@@ -127,7 +137,7 @@ export default function About() {
           <div className="max-w-4xl mx-auto">
             <p className="text-lg text-muted-foreground mb-6">
               Founded in 2024 by passionate travelers who were frustrated with unreliable hotel reviews, 
-              TourProof was born from a simple idea: what if every review was guaranteed to be authentic?
+              RealStay was born from a simple idea: what if every review was guaranteed to be authentic?
             </p>
             <p className="text-lg text-muted-foreground mb-6">
               We developed a unique verification system that ensures only guests who have actually stayed 
