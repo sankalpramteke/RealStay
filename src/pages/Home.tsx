@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Search, MapPin, Calendar, Users, Star, Shield, Clock } from 'lucide-react';
+import { useScrollReveal } from '@/hooks/use-scroll-reveal';
 
 export default function Home() {
   const [destination, setDestination] = useState('');
