@@ -101,7 +101,7 @@ export default function Hotels() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-8 px-4 animate-fade-in">
       <div className="container mx-auto">
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">

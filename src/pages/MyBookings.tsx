@@ -180,7 +180,7 @@ export default function MyBookings() {
                         <DollarSign className="h-4 w-4 mr-2" />
                         <span className="text-sm">Total Amount</span>
                       </div>
-                      <p className="font-bold text-lg">${booking.total_amount}</p>
+                      <p className="font-bold text-lg">₹{booking.total_amount.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">
                         Booked on {formatDate(booking.created_at)}
                       </p>

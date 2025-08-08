@@ -167,7 +167,8 @@ export default function HotelDetail() {
           total_amount: totalAmount,
           payment_method: paymentMethod,
           payment_transaction_id: transactionId,
-          payment_amount: paymentMethod === 'pending' ? null : totalAmount
+          payment_amount: paymentMethod === 'pending' ? null : totalAmount,
+          status: paymentMethod === 'metamask' ? 'confirmed' : 'pending'
         });
 
       if (error) throw error;
@@ -364,7 +365,7 @@ export default function HotelDetail() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-8 px-4 animate-fade-in">
       <div className="container mx-auto">
         {/* Hotel Header with Photo Gallery */}
         <div className="space-y-6 mb-8">
@@ -396,7 +397,7 @@ export default function HotelDetail() {
                 <img 
                   src={hotel.image_url} 
                   alt={hotel.name}
-                  className="w-full h-full object-cover rounded-l-lg cursor-pointer hover:brightness-90 transition-all"
+                  className="w-full h-full object-cover rounded-l-lg cursor-pointer hover:brightness-90 transition-all hover-scale"
                   onClick={() => setShowAllPhotos(true)}
                 />
               ) : (
@@ -486,9 +487,25 @@ export default function HotelDetail() {
               </div>
             </div>
 
+            {/* Location Map */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Location</h3>
+              <div className="rounded-lg overflow-hidden border">
+                <iframe
+                  title={`${hotel.name} location on map`}
+                  src={`https://www.google.com/maps?q=${encodeURIComponent((hotel.location ? hotel.location + ', ' : '') + hotel.city + ', ' + hotel.country)}&output=embed`}
+                  width="100%"
+                  height="320"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="w-full"
+                ></iframe>
+              </div>
+            </div>
+
             {/* Tabs for Reviews */}
             <Tabs defaultValue="reviews" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
                 <TabsTrigger value="write-review" disabled={!hasBooked}>
                   {hasBooked ? 'Write Review' : 'Book to Review'}

@@ -53,7 +53,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 px-4" style={{
+      <section className="relative py-20 px-4 animate-fade-in" style={{
         backgroundImage: `url('/src/components/layout/background.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
