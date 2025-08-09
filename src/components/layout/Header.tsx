@@ -1,4 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import EntryModal from '@/components/host/EntryModal';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -14,6 +16,7 @@ export function Header() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [entryOpen, setEntryOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -67,7 +70,7 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem onClick={() => navigate('/host')}>Become a host</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEntryOpen(true)}>Become a host</DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/contact">Help Centre</Link>
               </DropdownMenuItem>
@@ -110,6 +113,7 @@ export function Header() {
           )}
         </div>
       </div>
+      <EntryModal open={entryOpen} onOpenChange={setEntryOpen} />
     </header>
   );
 }

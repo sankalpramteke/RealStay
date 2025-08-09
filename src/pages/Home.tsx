@@ -115,17 +115,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Explore Experiences */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Why Choose RealStay?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="text-center p-6">
-                <CardContent className="pt-6">
-                  <feature.icon className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+          <h2 className="text-3xl font-bold text-center mb-12">Explore Experiences</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[{icon:'🌄',title:'Nature getaways',text:'Guided hikes, camping and more'},{icon:'🍽️',title:'Food & culture',text:'Tastings, cooking classes'},{icon:'🎭',title:'Arts & shows',text:'Workshops and performances'}].map((it, i)=> (
+              <Card key={i} className="hover-scale">
+                <CardContent className="p-6 text-center">
+                  <div className="text-5xl mb-3">{it.icon}</div>
+                  <h3 className="text-xl font-semibold">{it.title}</h3>
+                  <p className="text-muted-foreground">{it.text}</p>
                 </CardContent>
               </Card>
             ))}
@@ -133,8 +133,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Popular Destinations */}
+      {/* Start Hosting CTA */}
       <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-3">Start hosting today</h2>
+          <p className="text-muted-foreground mb-6">Earn on your terms. It only takes a few steps to create a draft.</p>
+          <Button size="lg" onClick={() => navigate('/host')}>Become a host</Button>
+        </div>
+      </section>
+
+      {/* Popular Destinations */}
+      <section className="py-16 px-4">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">Popular Destinations</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -144,6 +153,24 @@ export default function Home() {
                   <div className="text-4xl mb-4">{destination.image}</div>
                   <h3 className="text-xl font-semibold mb-2">{destination.name}</h3>
                   <p className="text-muted-foreground">{destination.hotels}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose (moved to bottom) */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose RealStay?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="text-center p-6">
+                <CardContent className="pt-6">
+                  <feature.icon className="h-12 w-12 text-primary mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
