@@ -225,10 +225,10 @@ export default function Host() {
   // Navigation actions
   const nextDisabled = useMemo(() => {
     if (step === 1) return !propertyType || !roomType || !guests || !address;
-    if (step === 2) return (photos.length < 5) || !title.trim();
+    if (step === 2) return !title.trim(); // relaxed: photos optional
     if (step === 3) return !basePrice;
     return false;
-  }, [step, propertyType, roomType, guests, address, photos.length, title, basePrice]);
+  }, [step, propertyType, roomType, guests, address, title, basePrice]);
 
   const goNext = async () => {
     await saveDraft();

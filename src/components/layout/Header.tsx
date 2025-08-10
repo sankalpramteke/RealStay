@@ -31,7 +31,7 @@ export function Header() {
         </Link>
 
         {/* Top-level categories like Airbnb: Homes, Experiences, Services */}
-        <nav className="hidden md:flex items-center space-x-6">
+        <nav className="hidden md:flex items-center space-x-6 mx-auto">
           <button
             onClick={() => navigate('/')}
             className={`inline-flex items-center gap-2 text-sm font-medium transition-colors border-b-2 pb-1 ${
@@ -61,7 +61,7 @@ export function Header() {
           </button>
         </nav>
 
-        <div className="flex items-center space-x-2">
+        <div className="ml-auto flex items-center space-x-2">
           {/* Hamburger menu with Become a host */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
