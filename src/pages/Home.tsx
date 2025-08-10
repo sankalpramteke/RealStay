@@ -11,6 +11,14 @@ import { useScrollReveal } from '@/hooks/use-scroll-reveal';
 export default function Home() {
   const [destination, setDestination] = useState('');
   const navigate = useNavigate();
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('host.draft');
+      setHasDraft(!!raw);
+    } catch {}
+  }, []);
 
   const handleSearch = () => {
     if (destination.trim()) {
@@ -114,6 +122,22 @@ export default function Home() {
         </div>
         </div>
       </section>
+
+      {hasDraft && (
+        <section className="py-6 px-4 bg-accent/20">
+          <div className="container mx-auto">
+            <Card>
+              <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Resume your listing</h3>
+                  <p className="text-sm text-muted-foreground">Pick up where you left off and publish when you’re ready.</p>
+                </div>
+                <Button onClick={() => navigate('/host')}>Resume</Button>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
 
       {/* Explore Experiences */}
       <section className="py-16 px-4">

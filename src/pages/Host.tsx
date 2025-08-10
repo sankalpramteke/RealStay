@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Stepper from '@/components/host/Stepper';
+import MapboxAddressPicker from '@/components/maps/MapboxAddressPicker';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -174,6 +175,26 @@ export default function Host() {
     }
   };
 
+  // AI suggestions
+  const [aiLoading, setAiLoading] = useState(false);
+  const suggestWithAI = async () => {
+    try {
+      setAiLoading(true);
+      const { data, error } = await (supabase.functions as any).invoke('generate-listing-copy', {
+        body: { category, propertyType, roomType, address, guests, bedrooms, beds, bathrooms, amenities, photos },
+      });
+      if (error) throw error;
+      if (data?.title) setTitle(data.title);
+      if (data?.description) setDescription(data.description);
+      toast({ title: 'Suggestions added', description: 'You can edit them anytime.' });
+      scheduleAutosave();
+    } catch (err: any) {
+      toast({ title: 'Could not generate suggestions', description: err.message || 'Please try again.' });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   // Photo upload
   const onFilesSelected = async (files: FileList | null) => {
     if (!files || !user) return;
@@ -274,20 +295,18 @@ export default function Host() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <Label>Address</Label>
-                  <Input placeholder="Start typing your address" value={address} onChange={(e)=>{setAddress(e.target.value); scheduleAutosave();}} />
-                </div>
-                <div>
-                  <Label>Latitude</Label>
-                  <Input placeholder="e.g., 28.6139" value={lat} onChange={(e)=>{setLat(e.target.value); scheduleAutosave();}} />
-                </div>
-                <div>
-                  <Label>Longitude</Label>
-                  <Input placeholder="e.g., 77.2090" value={lng} onChange={(e)=>{setLng(e.target.value); scheduleAutosave();}} />
-                </div>
-              </div>
+              <MapboxAddressPicker
+                value={address}
+                lat={lat}
+                lng={lng}
+                mapToken={localStorage.getItem('MAPBOX_PUBLIC_TOKEN') || undefined}
+                onChange={(v) => {
+                  setAddress(v.address);
+                  setLat(v.lat);
+                  setLng(v.lng);
+                  scheduleAutosave();
+                }}
+              />
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
@@ -336,8 +355,14 @@ export default function Host() {
               </div>
 
               <div>
-                <Label>Title</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Title</Label>
+                  <Button size="sm" variant="secondary" onClick={suggestWithAI} disabled={aiLoading}>
+                    {aiLoading ? 'Generating…' : 'Suggest with AI'}
+                  </Button>
+                </div>
                 <Input placeholder="Sunny 1-bedroom near the waterfront" value={title} onChange={(e)=>{setTitle(e.target.value); scheduleAutosave();}} />
+                <p className="text-xs text-muted-foreground mt-1">Highlight what's unique.</p>
               </div>
 
               <div>
