@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -14,13 +15,6 @@ serve(async (req) => {
   }
 
   try {
-    if (!OPENAI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "Missing OPENAI_API_KEY secret" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
-    }
-
     const { category, propertyType, roomType, address, guests, bedrooms, beds, bathrooms, amenities, photos } = await req.json();
 
     const prompt = `Act as an expert hospitality copywriter. Create concise, appealing listing copy.
@@ -39,32 +33,54 @@ Context:
 Style: Friendly, clear, highlight what is unique, avoid clichés.
 Output example: {"title":"…","description":"…"}`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are a helpful assistant that outputs strict JSON only." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 600,
-      }),
-    });
+    // Prefer Gemini if available, otherwise fall back to OpenAI
+    let content = "";
 
-    const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content || "";
+    if (GEMINI_API_KEY) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const geminiRes = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            { role: "user", parts: [{ text: prompt }] }
+          ],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 700 }
+        }),
+      });
+      const data = await geminiRes.json();
+      content = data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("") || "";
+    } else if (OPENAI_API_KEY) {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a helpful assistant that outputs strict JSON only." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 600,
+        }),
+      });
+      const data = await response.json();
+      content = data?.choices?.[0]?.message?.content || "";
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Missing GEMINI_API_KEY or OPENAI_API_KEY secret" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
 
     let parsed: { title?: string; description?: string } = {};
     try {
       parsed = JSON.parse(content);
     } catch {
-      // Attempt to extract JSON substring
-      const match = content.match(/\{[\s\S]*\}/);
+      const match = typeof content === "string" ? content.match(/\{[\s\S]*\}/) : null;
       if (match) {
         try { parsed = JSON.parse(match[0]); } catch {}
       }
