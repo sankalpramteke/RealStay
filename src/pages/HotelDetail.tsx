@@ -104,41 +104,49 @@ export default function HotelDetail() {
 
   const fetchHotelData = async () => {
     try {
-      // Fetch hotel details
+      // 1) Fetch hotel details (critical)
       const { data: hotelData, error: hotelError } = await supabase
         .from('hotels')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (hotelError) throw hotelError;
+      if (hotelError || !hotelData) {
+        throw hotelError || new Error('Hotel not found');
+      }
       setHotel(hotelData);
 
-      // Fetch rooms
+      // 2) Fetch rooms (non-critical). On error, log and default to []
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
         .select('*')
         .eq('hotel_id', id);
+      if (roomsError) {
+        console.error('Rooms load error:', roomsError);
+        setRooms([]);
+      } else {
+        setRooms(roomsData || []);
+      }
 
-      if (roomsError) throw roomsError;
-      setRooms(roomsData || []);
-
-      // Fetch reviews
+      // 3) Fetch reviews (non-critical). On error, log and default to []
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select('*')
         .eq('hotel_id', id)
         .order('created_at', { ascending: false });
-
-      if (reviewsError) throw reviewsError;
-      setReviews(reviewsData || []);
+      if (reviewsError) {
+        console.error('Reviews load error:', reviewsError);
+        setReviews([]);
+      } else {
+        setReviews(reviewsData || []);
+      }
 
     } catch (error) {
       console.error('Error fetching hotel data:', error);
       toast({
-        title: "Error",
-        description: "Failed to load hotel information",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load hotel information',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
@@ -158,6 +166,19 @@ export default function HotelDetail() {
     const totalAmount = selectedRoomData.price_per_night * nights;
 
     try {
+      // Ensure profiles row exists for FK: bookings.user_id -> profiles(id)
+      const profileUpsert = {
+        id: user.id,
+        email: (user as any).email ?? null,
+        full_name: (user as any).user_metadata?.full_name ?? null,
+      };
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .upsert(profileUpsert, { onConflict: 'id', ignoreDuplicates: false });
+      if (profileErr) {
+        throw new Error(`Profile upsert failed: ${profileErr.message}`);
+      }
+
       const { error } = await supabase
         .from('bookings')
         .insert({
@@ -182,8 +203,8 @@ export default function HotelDetail() {
     } catch (error) {
       console.error('Error creating booking:', error);
       toast({
-        title: "Booking failed",
-        description: "There was an error creating your booking",
+        title: 'Booking failed',
+        description: (error as any)?.message || 'There was an error creating your booking',
         variant: "destructive"
       });
     }

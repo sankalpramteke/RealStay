@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MapPin, Calendar, Users, DollarSign } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Booking {
   id: string;
@@ -29,6 +31,8 @@ export default function MyBookings() {
   const { user, loading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -56,23 +60,6 @@ export default function MyBookings() {
       setLoadingBookings(false);
     }
   };
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect if not authenticated
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -102,6 +89,49 @@ export default function MyBookings() {
     return diffDays;
   };
 
+  const canComplete = (checkOut: string) => {
+    const today = new Date();
+    const co = new Date(checkOut);
+    // allow complete if checkout is today or in the past
+    return co <= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  };
+
+  const updateStatus = async (bookingId: string, next: 'pending' | 'confirmed' | 'cancelled' | 'completed') => {
+    try {
+      setUpdatingId(bookingId);
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: next })
+        .eq('id', bookingId)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      toast({ title: 'Status updated', description: `Booking marked as ${next}.` });
+      await fetchBookings();
+    } catch (e: any) {
+      console.error('Update status error:', e);
+      toast({ title: 'Failed to update', description: e?.message || 'Please try again', variant: 'destructive' });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   if (loadingBookings) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,9 +158,26 @@ export default function MyBookings() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl">{booking.hotels.name}</CardTitle>
-                    <Badge variant={getStatusColor(booking.status)}>
-                      {booking.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusColor(booking.status)}>
+                        {booking.status}
+                      </Badge>
+                      {/* Actions */}
+                      {booking.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <Button size="sm" disabled={!!updatingId} onClick={() => updateStatus(booking.id, 'confirmed')}>Confirm</Button>
+                          <Button size="sm" variant="outline" disabled={!!updatingId} onClick={() => updateStatus(booking.id, 'cancelled')}>Cancel</Button>
+                        </div>
+                      )}
+                      {booking.status === 'confirmed' && (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" disabled={!!updatingId} onClick={() => updateStatus(booking.id, 'cancelled')}>Cancel</Button>
+                          <Button size="sm" disabled={!!updatingId || !canComplete(booking.check_out_date)} onClick={() => updateStatus(booking.id, 'completed')}>
+                            {canComplete(booking.check_out_date) ? 'Mark Completed' : 'Completable after checkout'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
