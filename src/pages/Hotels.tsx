@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Star, Wifi, Car, Coffee, Search } from 'lucide-react';
 
@@ -91,17 +92,35 @@ export default function Hotels() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Loading hotels...</p>
+      <div className="min-h-screen py-8 px-4">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-0">
+                  <div className="p-0">
+                    <div className="w-full h-48 bg-muted rounded-t-lg" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-5 w-3/4 bg-muted rounded" />
+                      <div className="h-4 w-1/2 bg-muted rounded" />
+                      <div className="flex gap-2">
+                        <div className="h-6 w-16 bg-muted rounded" />
+                        <div className="h-6 w-16 bg-muted rounded" />
+                      </div>
+                      <div className="h-8 w-24 bg-muted rounded" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-8 px-4 animate-fade-in">
       <div className="container mx-auto">
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
@@ -111,7 +130,7 @@ export default function Hotels() {
                 placeholder="Search by destination, hotel name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <Button 
                 onClick={handleSearch}
@@ -152,17 +171,18 @@ export default function Hotels() {
             >
               <CardContent className="p-0">
                 <div className="relative">
-                  <div className="h-48 bg-muted rounded-t-lg flex items-center justify-center">
+                  <AspectRatio ratio={4/3} className="bg-muted rounded-t-lg overflow-hidden">
                     {hotel.image_url ? (
                       <img 
                         src={hotel.image_url} 
-                        alt={hotel.name}
-                        className="w-full h-full object-cover rounded-t-lg"
+                        alt={`${hotel.name} hotel photo`}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="text-6xl">🏨</div>
+                      <div className="w-full h-full flex items-center justify-center text-6xl">🏨</div>
                     )}
-                  </div>
+                  </AspectRatio>
                   <div className="absolute top-2 right-2 bg-white rounded-lg px-2 py-1 shadow">
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -203,7 +223,7 @@ export default function Hotels() {
                   
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-2xl font-bold">${hotel.price_per_night}</span>
+                      <span className="text-2xl font-bold">₹{hotel.price_per_night}</span>
                       <span className="text-muted-foreground">/night</span>
                     </div>
                     <Button size="sm" className="group-hover:bg-primary/90 transition-colors">

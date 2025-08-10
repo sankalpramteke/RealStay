@@ -150,6 +150,78 @@ export type Database = {
         }
         Relationships: []
       }
+      listings: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          availability: Json
+          bathrooms: number
+          bedrooms: number
+          beds: number
+          category: string
+          coordinates: Json | null
+          created_at: string
+          description: string | null
+          guests: number
+          host_id: string
+          id: string
+          photos: string[] | null
+          pricing: Json
+          property_type: string | null
+          room_type: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          verification_status: string
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          availability?: Json
+          bathrooms?: number
+          bedrooms?: number
+          beds?: number
+          category: string
+          coordinates?: Json | null
+          created_at?: string
+          description?: string | null
+          guests?: number
+          host_id: string
+          id?: string
+          photos?: string[] | null
+          pricing?: Json
+          property_type?: string | null
+          room_type?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          availability?: Json
+          bathrooms?: number
+          bedrooms?: number
+          beds?: number
+          category?: string
+          coordinates?: Json | null
+          created_at?: string
+          description?: string | null
+          guests?: number
+          host_id?: string
+          id?: string
+          photos?: string[] | null
+          pricing?: Json
+          property_type?: string | null
+          room_type?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
