@@ -13,10 +13,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { PaymentModal } from '@/components/PaymentModal';
+import { AskGuestButton } from '@/components/ReviewChat';
 import { 
   MapPin, Star, Wifi, Car, Coffee, Users, Calendar, Shield, 
   Accessibility, ChefHat, Tv, TreePine, Baby, Camera, Heart,
-  Share, Grid3X3, Phone, CheckCircle
+  Share, Grid3X3, Phone, CheckCircle, MessageSquare
 } from 'lucide-react';
 
 interface Hotel {
@@ -53,6 +54,8 @@ interface Review {
   comment: string;
   created_at: string;
   user_id: string;
+  user_name?: string;
+  user_avatar?: string;
 }
 
 export default function HotelDetail() {
@@ -101,41 +104,49 @@ export default function HotelDetail() {
 
   const fetchHotelData = async () => {
     try {
-      // Fetch hotel details
+      // 1) Fetch hotel details (critical)
       const { data: hotelData, error: hotelError } = await supabase
         .from('hotels')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (hotelError) throw hotelError;
+      if (hotelError || !hotelData) {
+        throw hotelError || new Error('Hotel not found');
+      }
       setHotel(hotelData);
 
-      // Fetch rooms
+      // 2) Fetch rooms (non-critical). On error, log and default to []
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
         .select('*')
         .eq('hotel_id', id);
+      if (roomsError) {
+        console.error('Rooms load error:', roomsError);
+        setRooms([]);
+      } else {
+        setRooms(roomsData || []);
+      }
 
-      if (roomsError) throw roomsError;
-      setRooms(roomsData || []);
-
-      // Fetch reviews
+      // 3) Fetch reviews (non-critical). On error, log and default to []
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select('*')
         .eq('hotel_id', id)
         .order('created_at', { ascending: false });
-
-      if (reviewsError) throw reviewsError;
-      setReviews(reviewsData || []);
+      if (reviewsError) {
+        console.error('Reviews load error:', reviewsError);
+        setReviews([]);
+      } else {
+        setReviews(reviewsData || []);
+      }
 
     } catch (error) {
       console.error('Error fetching hotel data:', error);
       toast({
-        title: "Error",
-        description: "Failed to load hotel information",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load hotel information',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
@@ -155,6 +166,19 @@ export default function HotelDetail() {
     const totalAmount = selectedRoomData.price_per_night * nights;
 
     try {
+      // Ensure profiles row exists for FK: bookings.user_id -> profiles(id)
+      const profileUpsert = {
+        id: user.id,
+        email: (user as any).email ?? null,
+        full_name: (user as any).user_metadata?.full_name ?? null,
+      };
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .upsert(profileUpsert, { onConflict: 'id', ignoreDuplicates: false });
+      if (profileErr) {
+        throw new Error(`Profile upsert failed: ${profileErr.message}`);
+      }
+
       const { error } = await supabase
         .from('bookings')
         .insert({
@@ -179,8 +203,8 @@ export default function HotelDetail() {
     } catch (error) {
       console.error('Error creating booking:', error);
       toast({
-        title: "Booking failed",
-        description: "There was an error creating your booking",
+        title: 'Booking failed',
+        description: (error as any)?.message || 'There was an error creating your booking',
         variant: "destructive"
       });
     }
@@ -535,7 +559,22 @@ export default function HotelDetail() {
                               {new Date(review.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <p className="text-muted-foreground">{review.comment}</p>
+                          <p className="text-muted-foreground mb-3">{review.comment}</p>
+                          <div className="pt-2 border-t border-gray-100">
+                            {/* Temporary test button */}
+                            <button 
+                              onClick={() => alert('Chat button clicked!')}
+                              className="bg-blue-500 text-white px-3 py-1 rounded text-sm mt-2"
+                            >
+                              Test Chat Button
+                            </button>
+                            
+                            <AskGuestButton 
+                              reviewerId={review.user_id}
+                              reviewerName={review.user_name || 'Guest'}
+                              reviewerAvatar={review.user_avatar}
+                            />
+                          </div>
                         </CardContent>
                       </Card>
                     ))}

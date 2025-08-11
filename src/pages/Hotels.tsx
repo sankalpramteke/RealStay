@@ -40,7 +40,7 @@ export default function Hotels() {
 
   const fetchHotels = async () => {
     try {
-      let query = supabase.from('hotels').select('*');
+      let query = supabase.from('hotels').select('*').eq('category', 'home');
 
       const search = searchParams.get('search');
       if (search) {

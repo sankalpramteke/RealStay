@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MapPin, Calendar, Users, DollarSign } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Booking {
   id: string;
@@ -29,11 +31,26 @@ export default function MyBookings() {
   const { user, loading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
       fetchBookings();
     }
+  }, [user]);
+
+  // Realtime status updates for the current user
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('bookings-updates')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `user_id=eq.${user.id}` }, (payload) => {
+        setBookings((prev) => prev.map((b) => (b.id === (payload.new as any).id ? { ...b, status: (payload.new as any).status } : b)));
+        toast({ title: 'Booking updated', description: `Your booking is now ${(payload.new as any).status}.` });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const fetchBookings = async () => {
@@ -56,23 +73,6 @@ export default function MyBookings() {
       setLoadingBookings(false);
     }
   };
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect if not authenticated
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -102,6 +102,49 @@ export default function MyBookings() {
     return diffDays;
   };
 
+  const canComplete = (checkOut: string) => {
+    const today = new Date();
+    const co = new Date(checkOut);
+    // allow complete if checkout is today or in the past
+    return co <= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  };
+
+  const updateStatus = async (bookingId: string, next: 'pending' | 'confirmed' | 'cancelled' | 'completed') => {
+    try {
+      setUpdatingId(bookingId);
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: next })
+        .eq('id', bookingId)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      toast({ title: 'Status updated', description: `Booking marked as ${next}.` });
+      await fetchBookings();
+    } catch (e: any) {
+      console.error('Update status error:', e);
+      toast({ title: 'Failed to update', description: e?.message || 'Please try again', variant: 'destructive' });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   if (loadingBookings) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,9 +171,12 @@ export default function MyBookings() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl">{booking.hotels.name}</CardTitle>
-                    <Badge variant={getStatusColor(booking.status)}>
-                      {booking.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusColor(booking.status)}>
+                        {booking.status}
+                      </Badge>
+                      {/* Host-driven workflow: actions are managed by host; user sees status only */}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>

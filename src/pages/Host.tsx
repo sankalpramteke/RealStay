@@ -118,12 +118,21 @@ export default function Host() {
         // Try find last draft
         const { data } = await (supabase.from('listings' as any) as any)
           .select('id')
+          .eq('host_id', user.id)
           .eq('status', 'draft')
           .order('updated_at', { ascending: false })
           .limit(1);
         const existing = data?.[0]?.id as string | undefined;
         if (existing) {
           setListingId(existing);
+          // Persist immediately so reloads retain the id
+          localStorage.setItem('host.draft', JSON.stringify({
+            listingId: existing,
+            category, propertyType, roomType,
+            address, lat, lng, guests, bedrooms, beds, bathrooms,
+            photos, title, description, amenities,
+            basePrice, currency, minNights, maxNights,
+          }));
           return existing;
         }
         // Create new draft
@@ -133,7 +142,14 @@ export default function Host() {
           .single();
         if (error) throw error;
         setListingId(created.id);
-        persistLocal();
+        // Persist immediately with new id
+        localStorage.setItem('host.draft', JSON.stringify({
+          listingId: created.id,
+          category, propertyType, roomType,
+          address, lat, lng, guests, bedrooms, beds, bathrooms,
+          photos, title, description, amenities,
+          basePrice, currency, minNights, maxNights,
+        }));
         return created.id as string;
       }
       return listingId;
@@ -224,11 +240,17 @@ export default function Host() {
 
   // Navigation actions
   const nextDisabled = useMemo(() => {
-    if (step === 1) return !propertyType || !roomType || !guests || !address;
-    if (step === 2) return !title.trim(); // relaxed: photos optional
+    if (step === 1) {
+      if (category === 'home') {
+        return !propertyType || !roomType || !guests || !address;
+      }
+      // For experiences/services, keep it light so hosts can proceed
+      return !guests;
+    }
+    if (step === 2) return !title.trim(); // photos optional
     if (step === 3) return !basePrice;
     return false;
-  }, [step, propertyType, roomType, guests, address, title, basePrice]);
+  }, [step, category, propertyType, roomType, guests, address, title, basePrice]);
 
   const goNext = async () => {
     await saveDraft();
@@ -244,17 +266,90 @@ export default function Host() {
     toast({ title: 'Draft saved', description: 'Resume anytime from Become a host.' });
     navigate('/');
   };
-
+  
+  // Publish and map to hotels/rooms (Option B)
   const publish = async () => {
     try {
       const id = await ensureDraftInDB();
       if (!id) throw new Error('No draft id');
+
+      // 1) Mark listing as published
       await (supabase.from('listings' as any) as any)
         .update({ status: 'published' })
         .eq('id', id);
-      toast({ title: 'Published', description: 'Your listing is now live.' });
+
+      // 2) Upsert into hotels (id = listing id)
+      const parseCityCountry = (addr?: string) => {
+        if (!addr) return { city: 'Unknown', country: 'Unknown' };
+        const parts = addr.split(',').map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          const country = parts[parts.length - 1];
+          const city = parts[parts.length - 2];
+          return { city, country };
+        }
+        return { city: addr, country: 'Unknown' };
+      };
+      const { city, country } = parseCityCountry(address);
+
+      const hotelPayload: any = {
+        id,
+        name: title || 'Untitled listing',
+        location: address || 'Unknown',
+        city,
+        country,
+        description: description || null,
+        image_url: photos?.[0] || null,
+        amenities: amenities && amenities.length ? amenities : null,
+        price_per_night: basePrice ? Number(basePrice) : 0,
+        rating: null,
+        host_id: user?.id || null,
+        category,
+      };
+
+      {
+        const { error: hotelErr } = await (supabase.from('hotels' as any) as any)
+          .upsert(hotelPayload, { onConflict: 'id' });
+        if (hotelErr) throw new Error(`Hotel upsert failed: ${hotelErr.message}`);
+      }
+
+      // 3) Ensure at least one room exists for booking
+      const { data: existingRooms, error: findRoomErr } = await (supabase.from('rooms' as any) as any)
+        .select('id')
+        .eq('hotel_id', id)
+        .limit(1);
+      if (findRoomErr) throw new Error(`Room lookup failed: ${findRoomErr.message}`);
+
+      const roomPayload: any = {
+        hotel_id: id,
+        room_type: roomType || 'standard',
+        capacity: guests || 1,
+        price_per_night: basePrice ? Number(basePrice) : 0,
+        available_rooms: 1,
+        amenities: amenities && amenities.length ? amenities : null,
+      };
+
+      if (existingRooms && existingRooms.length > 0) {
+        const { error: updRoomErr } = await (supabase.from('rooms' as any) as any)
+          .update(roomPayload)
+          .eq('id', existingRooms[0].id);
+        if (updRoomErr) throw new Error(`Room update failed: ${updRoomErr.message}`);
+      } else {
+        const { error: insRoomErr } = await (supabase.from('rooms' as any) as any)
+          .insert(roomPayload);
+        if (insRoomErr) throw new Error(`Room insert failed: ${insRoomErr.message}`);
+      }
+
+      // 4) Verify hotel now exists before navigating
+      const { data: verifyHotel, error: verifyErr } = await (supabase.from('hotels' as any) as any)
+        .select('id')
+        .eq('id', id)
+        .single();
+      if (verifyErr || !verifyHotel) throw new Error(`Verification failed: ${verifyErr?.message || 'hotel not found after upsert'}`);
+
+      toast({ title: 'Published', description: 'Your listing is now live and discoverable.' });
       localStorage.removeItem('host.draft');
-      navigate('/');
+      // Redirect to hotel detail for booking
+      navigate(`/hotel/${id}`);
     } catch (err: any) {
       toast({ title: 'Could not publish', description: err.message || 'Please complete all required fields.' });
     }

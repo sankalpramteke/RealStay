@@ -7,6 +7,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Search, MapPin, Calendar, Users, Star, Shield, Clock } from 'lucide-react';
 import { useScrollReveal } from '@/hooks/use-scroll-reveal';
+import bg from '@/components/layout/background.jpg';
 
 export default function Home() {
   const [destination, setDestination] = useState('');

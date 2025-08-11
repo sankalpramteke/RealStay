@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import Home from "./pages/Home";
@@ -17,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import Experiences from "./pages/Experiences";
 import Services from "./pages/Services";
 import Host from "./pages/Host";
+import HostBookings from "./pages/HostBookings";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <WebSocketProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -38,6 +41,7 @@ const App = () => (
                 <Route path="/services" element={<Services />} />
                 <Route path="/host" element={<Host />} />
                 <Route path="/my-bookings" element={<MyBookings />} />
+                <Route path="/host-bookings" element={<HostBookings />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/auth" element={<Auth />} />
@@ -48,6 +52,7 @@ const App = () => (
             <Footer />
           </div>
         </BrowserRouter>
+        </WebSocketProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
