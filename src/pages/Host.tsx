@@ -240,11 +240,17 @@ export default function Host() {
 
   // Navigation actions
   const nextDisabled = useMemo(() => {
-    if (step === 1) return !propertyType || !roomType || !guests || !address;
-    if (step === 2) return !title.trim(); // relaxed: photos optional
+    if (step === 1) {
+      if (category === 'home') {
+        return !propertyType || !roomType || !guests || !address;
+      }
+      // For experiences/services, keep it light so hosts can proceed
+      return !guests;
+    }
+    if (step === 2) return !title.trim(); // photos optional
     if (step === 3) return !basePrice;
     return false;
-  }, [step, propertyType, roomType, guests, address, title, basePrice]);
+  }, [step, category, propertyType, roomType, guests, address, title, basePrice]);
 
   const goNext = async () => {
     await saveDraft();
@@ -296,6 +302,8 @@ export default function Host() {
         amenities: amenities && amenities.length ? amenities : null,
         price_per_night: basePrice ? Number(basePrice) : 0,
         rating: null,
+        host_id: user?.id || null,
+        category,
       };
 
       {

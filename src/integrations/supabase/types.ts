@@ -91,12 +91,14 @@ export type Database = {
         Row: {
           accessibility_amenities: string[] | null
           amenities: string[] | null
+          category: string
           city: string
           country: string
           created_at: string
           description: string | null
           entertainment_amenities: string[] | null
           family_amenities: string[] | null
+          host_id: string | null
           id: string
           image_url: string | null
           kitchen_amenities: string[] | null
@@ -111,12 +113,14 @@ export type Database = {
         Insert: {
           accessibility_amenities?: string[] | null
           amenities?: string[] | null
+          category?: string
           city: string
           country: string
           created_at?: string
           description?: string | null
           entertainment_amenities?: string[] | null
           family_amenities?: string[] | null
+          host_id?: string | null
           id?: string
           image_url?: string | null
           kitchen_amenities?: string[] | null
@@ -131,12 +135,14 @@ export type Database = {
         Update: {
           accessibility_amenities?: string[] | null
           amenities?: string[] | null
+          category?: string
           city?: string
           country?: string
           created_at?: string
           description?: string | null
           entertainment_amenities?: string[] | null
           family_amenities?: string[] | null
+          host_id?: string | null
           id?: string
           image_url?: string | null
           kitchen_amenities?: string[] | null

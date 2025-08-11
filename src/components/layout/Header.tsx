@@ -61,26 +61,7 @@ export function Header() {
           </button>
         </nav>
 
-        <div className="ml-auto flex items-center space-x-2">
-          {/* Hamburger menu with Become a host */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-9 w-9">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem onClick={() => setEntryOpen(true)}>Become a host</DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/contact">Help Centre</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Globe className="mr-2 h-4 w-4" /> Language & Region
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
+        <div className="ml-auto flex items-center justify-end gap-2 relative w-auto">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -93,6 +74,12 @@ export function Header() {
                   <Link to="/my-bookings" className="flex items-center">
                     <BookOpen className="mr-2 h-4 w-4" />
                     <span>My Bookings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/host-bookings" className="flex items-center">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    <span>Host Bookings</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={signOut}>
@@ -111,6 +98,25 @@ export function Header() {
               </Button>
             </div>
           )}
+
+          {/* Hamburger at absolute top-right */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-9 w-9 absolute right-0 top-0">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuItem onClick={() => setEntryOpen(true)}>Become a host</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/contact">Help Centre</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Globe className="mr-2 h-4 w-4" /> Language & Region
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <EntryModal open={entryOpen} onOpenChange={setEntryOpen} />

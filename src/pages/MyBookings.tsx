@@ -40,6 +40,19 @@ export default function MyBookings() {
     }
   }, [user]);
 
+  // Realtime status updates for the current user
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('bookings-updates')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `user_id=eq.${user.id}` }, (payload) => {
+        setBookings((prev) => prev.map((b) => (b.id === (payload.new as any).id ? { ...b, status: (payload.new as any).status } : b)));
+        toast({ title: 'Booking updated', description: `Your booking is now ${(payload.new as any).status}.` });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   const fetchBookings = async () => {
     try {
       const { data, error } = await supabase
@@ -162,21 +175,7 @@ export default function MyBookings() {
                       <Badge variant={getStatusColor(booking.status)}>
                         {booking.status}
                       </Badge>
-                      {/* Actions */}
-                      {booking.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <Button size="sm" disabled={!!updatingId} onClick={() => updateStatus(booking.id, 'confirmed')}>Confirm</Button>
-                          <Button size="sm" variant="outline" disabled={!!updatingId} onClick={() => updateStatus(booking.id, 'cancelled')}>Cancel</Button>
-                        </div>
-                      )}
-                      {booking.status === 'confirmed' && (
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" disabled={!!updatingId} onClick={() => updateStatus(booking.id, 'cancelled')}>Cancel</Button>
-                          <Button size="sm" disabled={!!updatingId || !canComplete(booking.check_out_date)} onClick={() => updateStatus(booking.id, 'completed')}>
-                            {canComplete(booking.check_out_date) ? 'Mark Completed' : 'Completable after checkout'}
-                          </Button>
-                        </div>
-                      )}
+                      {/* Host-driven workflow: actions are managed by host; user sees status only */}
                     </div>
                   </div>
                 </CardHeader>
