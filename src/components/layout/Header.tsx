@@ -39,16 +39,16 @@ export function Header() {
             }`}
             aria-current={isActive('/') ? 'page' : undefined}
           >
-            <Home className="h-4 w-4" /> Homes
+            <Home className="h-4 w-4" /> Home
           </button>
           <button
-            onClick={() => navigate('/experiences')}
+            onClick={() => navigate('/hotels')}
             className={`inline-flex items-center gap-2 text-sm font-medium transition-colors border-b-2 pb-1 ${
-              isActive('/experiences') ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-primary'
+              isActive('/hotels') ? 'text-primary border-primary' : 'text-muted-foreground border-transparent hover:text-primary'
             }`}
-            aria-current={isActive('/experiences') ? 'page' : undefined}
+            aria-current={isActive('/hotels') ? 'page' : undefined}
           >
-            <Balloon className="h-4 w-4" /> Experiences
+            <Balloon className="h-4 w-4" /> Hotels
           </button>
           <button
             onClick={() => navigate('/services')}
@@ -71,9 +71,21 @@ export function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/my-bookings" className="flex items-center">
                     <BookOpen className="mr-2 h-4 w-4" />
                     <span>My Bookings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/my-services" className="flex items-center">
+                    <Bell className="mr-2 h-4 w-4" />
+                    <span>My Services</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

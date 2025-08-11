@@ -56,6 +56,9 @@ interface Review {
   user_id: string;
   user_name?: string;
   user_avatar?: string;
+  hotel_id: string;
+  wallet_address?: string | null;
+  signature?: string | null;
 }
 
 export default function HotelDetail() {
@@ -67,6 +70,7 @@ export default function HotelDetail() {
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [sigVerified, setSigVerified] = useState<Record<string, 'pending' | 'valid' | 'invalid'>>({});
   const [loading, setLoading] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<string>('');
   const [checkInDate, setCheckInDate] = useState('');
@@ -76,6 +80,9 @@ export default function HotelDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [hasBooked, setHasBooked] = useState(false);
+  // MetaMask optional signing
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [signing, setSigning] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -83,6 +90,94 @@ export default function HotelDetail() {
       checkUserBooking();
     }
   }, [id, user]);
+
+  useEffect(() => {
+    const verify = async () => {
+      const updates: Record<string, 'pending' | 'valid' | 'invalid'> = {};
+      for (const r of reviews) {
+        if (r.signature && r.wallet_address) {
+          // Mark pending first
+          updates[r.id] = 'pending';
+        }
+      }
+      if (Object.keys(updates).length) setSigVerified(prev => ({ ...prev, ...updates }));
+
+      for (const r of reviews) {
+        if (r.signature && r.wallet_address) {
+          try {
+            const message = {
+              type: 'realstay.review.v1',
+              user_id: r.user_id,
+              hotel_id: r.hotel_id,
+              rating: r.rating,
+              comment: r.comment,
+            };
+            const { data, error } = await supabase.functions.invoke('verify-review-signature', {
+              body: { message, signature: r.signature, wallet_address: r.wallet_address }
+            });
+            const valid = !error && data?.valid === true;
+            setSigVerified(prev => ({ ...prev, [r.id]: valid ? 'valid' : 'invalid' }));
+          } catch (e) {
+            setSigVerified(prev => ({ ...prev, [r.id]: 'invalid' }));
+          }
+        }
+      }
+    };
+    if (reviews && reviews.length) verify();
+  }, [reviews]);
+
+  // Connect MetaMask wallet (optional)
+  const connectWallet = async () => {
+    try {
+      const eth = (window as any).ethereum;
+      if (!eth) {
+        toast({ title: 'MetaMask not found', description: 'Install MetaMask to sign reviews (optional).' });
+        return;
+      }
+      const accounts = await eth.request({ method: 'eth_requestAccounts' });
+      const addr = accounts?.[0] || null;
+      if (addr) {
+        setWalletAddress(addr);
+        toast({ title: 'Wallet connected', description: addr });
+      }
+    } catch (e:any) {
+      toast({ title: 'Wallet connect failed', description: e?.message || 'Could not connect wallet', variant: 'destructive' });
+    }
+  };
+
+  // Create a canonical message for signing and its SHA-256 hash
+  const encodeForHash = (obj: any) => new TextEncoder().encode(JSON.stringify(obj));
+  const sha256Base16 = async (input: Uint8Array) => {
+    const buf = await crypto.subtle.digest('SHA-256', input);
+    const arr = Array.from(new Uint8Array(buf));
+    return arr.map((b) => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const signReviewIfConnected = async (payload: { user_id: string; hotel_id: string; rating: number; comment: string }) => {
+    if (!walletAddress) return { wallet_address: null as string | null, signature: null as string | null, message_hash: null as string | null };
+    const eth = (window as any).ethereum;
+    if (!eth) return { wallet_address: null, signature: null, message_hash: null };
+    setSigning(true);
+    try {
+      const message = {
+        type: 'realstay.review.v1',
+        user_id: payload.user_id,
+        hotel_id: payload.hotel_id,
+        rating: payload.rating,
+        comment: payload.comment,
+      };
+      const msgString = JSON.stringify(message);
+      const hash = await sha256Base16(encodeForHash(message));
+      const signature = await eth.request({ method: 'personal_sign', params: [ msgString, walletAddress ] });
+      return { wallet_address: walletAddress, signature, message_hash: hash };
+    } catch (e) {
+      console.error('Sign failed:', e);
+      toast({ title: 'Signature skipped', description: 'Continuing without wallet signature.' });
+      return { wallet_address: null, signature: null, message_hash: null };
+    } finally {
+      setSigning(false);
+    }
+  };
 
   const checkUserBooking = async () => {
     if (!user || !id) return;
@@ -228,16 +323,34 @@ export default function HotelDetail() {
     setSubmittingReview(true);
 
     try {
+      // Prepare optional signature
+      const sig = await signReviewIfConnected({ user_id: user.id, hotel_id: id!, rating: newReview.rating, comment: newReview.comment });
+
       const { error } = await supabase
         .from('reviews')
         .insert({
           user_id: user.id,
           hotel_id: id,
           rating: newReview.rating,
-          comment: newReview.comment
+          comment: newReview.comment,
+          wallet_address: sig.wallet_address,
+          signature: sig.signature,
+          message_hash: sig.message_hash,
         });
 
-      if (error) throw error;
+      if (error) {
+        const msg = (error as any)?.message || '';
+        if (/Invalid Refresh Token|JWT|session/i.test(msg)) {
+          toast({
+            title: 'Session expired',
+            description: 'Please sign in again to submit your review.',
+            variant: 'destructive'
+          });
+          navigate('/auth');
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: "Review submitted!",
@@ -247,11 +360,12 @@ export default function HotelDetail() {
       setNewReview({ rating: 5, comment: '' });
       fetchHotelData(); // Refresh reviews
 
-    } catch (error) {
-      console.error('Error submitting review:', error);
+    } catch (error: any) {
+      console.error('Error submitting review:', error?.message || error, error);
+
       toast({
         title: "Failed to submit review",
-        description: "There was an error submitting your review",
+        description: error?.message || "There was an error submitting your review",
         variant: "destructive"
       });
     } finally {
@@ -560,6 +674,19 @@ export default function HotelDetail() {
                             </span>
                           </div>
                           <p className="text-muted-foreground mb-3">{review.comment}</p>
+                          {/* Badges */}
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              ✓ Verified booking
+                            </span>
+                            {review.wallet_address && review.signature ? (
+                              <span className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded border ${sigVerified[review.id] === 'valid' ? 'bg-blue-50 text-blue-700 border-blue-200' : sigVerified[review.id] === 'pending' ? 'bg-gray-50 text-gray-600 border-gray-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                {sigVerified[review.id] === 'valid' && '🔐 Wallet-signed (verified)'}
+                                {sigVerified[review.id] === 'pending' && '🔐 Wallet-signed (verifying...)'}
+                                {sigVerified[review.id] === 'invalid' && '🔐 Wallet-signed (invalid)'}
+                              </span>
+                            ) : null}
+                          </div>
                           <div className="pt-2 border-t border-gray-100">
                             {/* Temporary test button */}
                             <button 
@@ -621,6 +748,20 @@ export default function HotelDetail() {
                           onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
                           rows={4}
                         />
+                      </div>
+
+                      {/* Optional Wallet Connect for signature */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-muted-foreground">
+                          {walletAddress ? (
+                            <span>Wallet connected: {walletAddress.slice(0,6)}...{walletAddress.slice(-4)}</span>
+                          ) : (
+                            <span>Connect MetaMask to sign your review (optional)</span>
+                          )}
+                        </div>
+                        <Button type="button" variant="outline" onClick={connectWallet} disabled={!!walletAddress || signing}>
+                          {walletAddress ? 'Connected' : signing ? 'Connecting...' : 'Connect wallet'}
+                        </Button>
                       </div>
 
                       <Button 

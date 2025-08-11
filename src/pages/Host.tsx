@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Stepper from '@/components/host/Stepper';
-import MapboxAddressPicker from '@/components/maps/MapboxAddressPicker';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -242,7 +241,8 @@ export default function Host() {
   const nextDisabled = useMemo(() => {
     if (step === 1) {
       if (category === 'home') {
-        return !propertyType || !roomType || !guests || !address;
+        const hasAddressOrCoords = !!address || (!!lat && !!lng);
+        return !propertyType || !roomType || !guests || !hasAddressOrCoords;
       }
       // For experiences/services, keep it light so hosts can proceed
       return !guests;
@@ -250,7 +250,7 @@ export default function Host() {
     if (step === 2) return !title.trim(); // photos optional
     if (step === 3) return !basePrice;
     return false;
-  }, [step, category, propertyType, roomType, guests, address, title, basePrice]);
+  }, [step, category, propertyType, roomType, guests, address, lat, lng, title, basePrice]);
 
   const goNext = async () => {
     await saveDraft();
@@ -390,18 +390,34 @@ export default function Host() {
                 </div>
               </div>
 
-              <MapboxAddressPicker
-                value={address}
-                lat={lat}
-                lng={lng}
-                mapToken={localStorage.getItem('MAPBOX_PUBLIC_TOKEN') || undefined}
-                onChange={(v) => {
-                  setAddress(v.address);
-                  setLat(v.lat);
-                  setLng(v.lng);
-                  scheduleAutosave();
-                }}
-              />
+              <div>
+                <Label>Address</Label>
+                <Input
+                  placeholder="Street, City, Country"
+                  value={address}
+                  onChange={(e)=>{setAddress(e.target.value); scheduleAutosave();}}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Enter a descriptive address.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Latitude</Label>
+                  <Input
+                    placeholder="e.g., 28.6139"
+                    value={lat}
+                    onChange={(e)=>{setLat(e.target.value); scheduleAutosave();}}
+                  />
+                </div>
+                <div>
+                  <Label>Longitude</Label>
+                  <Input
+                    placeholder="e.g., 77.2090"
+                    value={lng}
+                    onChange={(e)=>{setLng(e.target.value); scheduleAutosave();}}
+                  />
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
