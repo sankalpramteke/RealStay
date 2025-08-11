@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Star, Globe, Users, Award, Clock } from 'lucide-react';
+import bg from '@/components/layout/background.jpg';
 
 export default function About() {
   const features = [
@@ -48,7 +49,7 @@ export default function About() {
       <section
         className="relative py-20 px-4 text-white"
         style={{
-          backgroundImage: `url('/src/components/layout/background.jpg')`,
+          backgroundImage: `url(${bg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

@@ -27,7 +27,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
+    // Disable WebSocket unless explicitly enabled to avoid console errors in preview
+    if (!user || localStorage.getItem('ENABLE_WS') !== '1') {
+      setIsConnected(false);
+      return;
+    }
 
     // In development, use a local WebSocket server
     const wsUrl = process.env.NODE_ENV === 'production'
